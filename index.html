@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bukhariya Fest - Detailed Scoreboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050a18;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-blue: #00d2ff;
+            --accent-purple: #9d50bb;
+            --gold: #ffd700;
+            --text-white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #050a18 0%, #111827 100%);
+            color: var(--text-white);
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 3px solid var(--accent-blue);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(20px); }
+        }
+
+        .card-main {
+            display: grid;
+            grid-template-columns: 60px 2fr 1fr 80px;
+            align-items: center;
+            padding: 15px;
+            cursor: pointer;
+        }
+
+        .rank-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .rank-1 { background: var(--gold); color: #000; box-shadow: 0 0 15px var(--gold); }
+
+        .event-info { padding: 0 10px; }
+        .event-name { font-size: 0.9rem; color: var(--accent-blue); font-weight: 600; text-transform: uppercase; }
+        .participant-name { font-size: 1.1rem; font-weight: 600; }
+
+        .team-tag {
+            background: rgba(157, 80, 187, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            border: 1px solid var(--accent-purple);
+            text-align: center;
+        }
+
+        .score-display {
+            font-size: 1.4rem;
+            font-weight: 800;
+            text-align: right;
+            color: var(--accent-blue);
+        }
+
+        .card-details {
+            background: rgba(0,0,0,0.2);
+            padding: 0;
+            max-height: 0;
+            transition: max-height 0.3s ease-out;
+            font-size: 0.9rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .score-card:hover .card-details {
+            max-height: 100px;
+            padding: 10px 15px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .detail-item { margin-bottom: 5px; color: #cbd5e1; }
+        .detail-item span { color: white; font-weight: 600; }
+
+        .winner-badge {
+            color: var(--gold);
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        #loading { text-align: center; padding: 50px; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>BUKHARIYA ARTS FEST</h1>
+    <p>Live Result Portal</p>
+</div>
+
+<div class="container" id="leaderboard">
+    <div id="loading">വിവരങ്ങൾ ശേഖരിക്കുന്നു...</div>
+</div>
+
+<script>
+    const tsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ56O5aSnw7A1i-9sD2blisxpJI3OHDoZjBhDNUehlwQMHmISN9gH5e4eBNBgnIm5FU4JvHEjgZUUb8/pub?gid=0&single=true&output=tsv';
+
+    async function updateDashboard() {
+        try {
+            const response = await fetch(tsvUrl);
+            const data = await response.text();
+            const rows = data.split('\n').slice(1); // Header ഒഴിവാക്കുന്നു
+
+            const container = document.getElementById('leaderboard');
+            container.innerHTML = '';
+
+            rows.forEach((row, index) => {
+                const cols = row.split('\t');
+                if (cols.length < 5) return;
+
+                // ഷീറ്റിലെ കോളങ്ങൾ: 0:Event, 1:Participant, 2:Team, 3:Category, 4:Score, 5:Rank, 6:Remarks
+                const item = {
+                    event: cols[0] || '',
+                    participant: cols[1] || '',
+                    team: cols[2] || '',
+                    category: cols[3] || '',
+                    score: cols[4] || '0',
+                    rank: cols[5] || '-',
+                    remarks: cols[6] || ''
+                };
+
+                const card = document.createElement('div');
+                card.className = 'score-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+
+                const rankClass = item.rank.trim() === '1' ? 'rank-1' : '';
+
+                card.innerHTML = `
+                    <div class="card-main">
+                        <div class="rank-circle ${rankClass}">${item.rank}</div>
+                        <div class="event-info">
+                            <div class="event-name">${item.event}</div>
+                            <div class="participant-name">${item.participant}</div>
+                        </div>
+                        <div class="team-tag">${item.team}</div>
+                        <div class="score-display">${item.score}</div>
+                    </div>
+                    <div class="card-details">
+                        <div class="detail-item">Category: <span>${item.category}</span></div>
+                        <div class="detail-item">Status: <span class="winner-badge">${item.remarks}</span></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('loading').innerHTML = "ഡാറ്റ ലോഡ് ചെയ്യുന്നതിൽ പിശക്!";
+        }
+    }
+
+    updateDashboard();
+    setInterval(updateDashboard, 30000); // 30 സെക്കന്റിൽ അപ്‌ഡേറ്റ് ചെയ്യും
+</script>
+
+</body>
+</html>
